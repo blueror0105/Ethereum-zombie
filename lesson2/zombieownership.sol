@@ -2,8 +2,11 @@ pragma solidity >=0.5.0 <0.6.0;
 
 import "./zombieattack.sol";
 import "./erc721.sol";
+import "./safemath.sol";
 
 contract ZombieOwnership is ZombieAttack, ERC721 {
+    using SafeMath for uint256;
+
     mapping(uint256 => address) zombieApprovals;
 
     function balanceOf(address _owner) external view returns (uint256) {
@@ -19,8 +22,11 @@ contract ZombieOwnership is ZombieAttack, ERC721 {
         address _to,
         uint256 _tokenId
     ) private {
-        ownerZombieCount[_to]++;
+        // 1. Replace with SafeMath's `add`
+        ownerZombieCount[_to].add(1);
+        // 2. Replace with SafeMath's `sub`
         ownerZombieCount[_from]--;
+        ownerZombieCount[_from].sub(1);
         zombieToOwner[_tokenId] = _to;
         emit Transfer(_from, _to, _tokenId);
     }
@@ -43,7 +49,6 @@ contract ZombieOwnership is ZombieAttack, ERC721 {
         onlyOwnerOf(_tokenId)
     {
         zombieApprovals[_tokenId] = _approved;
-        //Fire the Approval event here
         emit Approval(msg.sender, _approved, _tokenId);
     }
 }
