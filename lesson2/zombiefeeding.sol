@@ -1,12 +1,11 @@
-pragma solidity >=0.5.0 <0.8.11;
+pragma solidity >=0.5.0 <0.6.0;
 
 import "./zombiefactory.sol";
 
-abstract contract KittyInterface {
+contract KittyInterface {
     function getKitty(uint256 _id)
         external
         view
-        virtual
         returns (
             bool isGestating,
             bool isReady,
@@ -24,7 +23,7 @@ abstract contract KittyInterface {
 contract ZombieFeeding is ZombieFactory {
     KittyInterface kittyContract;
 
-    modifier ownerOf(uint256 _zombieId) {
+    modifier onlyOwnerOf(uint256 _zombieId) {
         require(msg.sender == zombieToOwner[_zombieId]);
         _;
     }
@@ -44,25 +43,23 @@ contract ZombieFeeding is ZombieFactory {
     function feedAndMultiply(
         uint256 _zombieId,
         uint256 _targetDna,
-        string memory _species
-    ) internal ownerOf(_zombieId) {
-        require(msg.sender == zombieToOwner[_zombieId]);
+        string _species
+    ) internal onlyOwnerOf(_zombieId) {
         Zombie storage myZombie = zombies[_zombieId];
-
+        require(_isReady(myZombie));
         _targetDna = _targetDna % dnaModulus;
         uint256 newDna = (myZombie.dna + _targetDna) / 2;
-
         if (
             keccak256(abi.encodePacked(_species)) ==
             keccak256(abi.encodePacked("kitty"))
         ) {
             newDna = newDna - (newDna % 100) + 99;
         }
-
         _createZombie("NoName", newDna);
+        _triggerCooldown(myZombie);
     }
 
-    function feedOnKitty(uint256 _zombieId, uint256 _kittyId) public view {
+    function feedOnKitty(uint256 _zombieId, uint256 _kittyId) public {
         uint256 kittyDna;
         (, , , , , , , , , kittyDna) = kittyContract.getKitty(_kittyId);
         feedAndMultiply(_zombieId, kittyDna, "kitty");

@@ -1,8 +1,13 @@
-pragma solidity >=0.5.0 <0.8.11;
+pragma solidity >=0.5.0 <0.6.0;
 
 import "./ownable.sol";
+// 1. Import here
+import "./safemath.sol";
 
 contract ZombieFactory is Ownable {
+    // 2. Declare using safemath here
+    using SafeMath for uint256;
+
     event NewZombie(uint256 zombieId, string name, uint256 dna);
 
     uint256 dnaDigits = 16;
@@ -23,27 +28,15 @@ contract ZombieFactory is Ownable {
     mapping(uint256 => address) public zombieToOwner;
     mapping(address => uint256) ownerZombieCount;
 
-    /**
-     * Create a new Zombie with name and DNA
-     *
-     * @param  _name | zombie's name
-     * @param  _dna | zombie's DNA
-     */
     function _createZombie(string memory _name, uint256 _dna) internal {
-        zombies.push(Zombie(_name, _dna, 1, uint32(now + cooldownTime), 0, 0));
-        uint256 id = zombies.length - 1;
+        uint256 id = zombies.push(
+            Zombie(_name, _dna, 1, uint32(now + cooldownTime), 0, 0)
+        ) - 1;
         zombieToOwner[id] = msg.sender;
         ownerZombieCount[msg.sender]++;
-
         emit NewZombie(id, _name, _dna);
     }
 
-    /**
-     * Generate DNA of zombie randomly
-     *
-     * @param _str | string to be used in generating dna
-     * @return dna
-     */
     function _generateRandomDna(string memory _str)
         private
         view
@@ -53,14 +46,10 @@ contract ZombieFactory is Ownable {
         return rand % dnaModulus;
     }
 
-    /**
-     * Create zombie randomly
-     *
-     * @param _name | zombie's name
-     */
     function createRandomZombie(string memory _name) public {
         require(ownerZombieCount[msg.sender] == 0);
         uint256 randDna = _generateRandomDna(_name);
+        randDna = randDna - (randDna % 100);
         _createZombie(_name, randDna);
     }
 }
